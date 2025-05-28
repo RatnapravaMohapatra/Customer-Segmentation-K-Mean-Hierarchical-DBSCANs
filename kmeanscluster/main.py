@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import streamlit as st
 from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from sklearn import metrics
 import scipy.cluster.hierarchy as sch
 
@@ -55,16 +56,28 @@ else:
 st.subheader('Dataset Preview')
 st.write(dataset)
 
+# Feature selection
+X_original = dataset.iloc[:, [3, 4]].values
+
+# PCA option
+use_pca = st.checkbox("Apply PCA for 2D Visualization", value=True)
+
+# Standardize data
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X_original)
+X = X_scaled.copy()
+
+# Apply PCA if selected
+if use_pca:
+    pca = PCA(n_components=2)
+    X = pca.fit_transform(X_scaled)
+
 # Select clustering method
 clustering_method = st.selectbox("Select Clustering Method", ["K-Means", "Hierarchical", "DBSCAN"])
-
-# Prepare data
-X = dataset.iloc[:, [3, 4]].values
 
 if clustering_method == "K-Means":
     st.subheader('K-Means Clustering')
 
-    # Elbow Method
     wcss = []
     for i in range(1, 11):
         kmeans = KMeans(n_clusters=i, init='k-means++', random_state=42)
@@ -72,29 +85,40 @@ if clustering_method == "K-Means":
         wcss.append(kmeans.inertia_)
 
     plt.figure()
-    plt.plot(range(1, 11), wcss)
+    plt.plot(range(1, 11), wcss, marker='o')
     plt.title('The Elbow Method')
     plt.xlabel('Number of clusters')
     plt.ylabel('WCSS')
     st.pyplot(plt)
 
-    # Apply KMeans
     kmeans = KMeans(n_clusters=5, init='k-means++', random_state=42)
     y_kmeans = kmeans.fit_predict(X)
 
-    # Plot clusters
     plt.figure()
-    plt.scatter(X[y_kmeans == 0, 0], X[y_kmeans == 0, 1], s=100, c='red', label='Cluster 1')
-    plt.scatter(X[y_kmeans == 1, 0], X[y_kmeans == 1, 1], s=100, c='blue', label='Cluster 2')
-    plt.scatter(X[y_kmeans == 2, 0], X[y_kmeans == 2, 1], s=100, c='green', label='Cluster 3')
-    plt.scatter(X[y_kmeans == 3, 0], X[y_kmeans == 3, 1], s=100, c='cyan', label='Cluster 4')
-    plt.scatter(X[y_kmeans == 4, 0], X[y_kmeans == 4, 1], s=100, c='magenta', label='Cluster 5')
+    for i in range(5):
+        plt.scatter(X[y_kmeans == i, 0], X[y_kmeans == i, 1], s=100, label=f'Cluster {i+1}')
     plt.scatter(kmeans.cluster_centers_[:, 0], kmeans.cluster_centers_[:, 1], s=300, c='yellow', label='Centroids')
     plt.title('K-Means Clusters of Customers')
-    plt.xlabel('Annual Income (k$)')
-    plt.ylabel('Spending Score (1-100)')
+    plt.xlabel('Component 1' if use_pca else 'Annual Income (k$)')
+    plt.ylabel('Component 2' if use_pca else 'Spending Score (1-100)')
     plt.legend()
     st.pyplot(plt)
+
+    silhouette = metrics.silhouette_score(X, y_kmeans)
+    st.write(f"Silhouette Score: **{silhouette:.3f}**")
+
+    # Prediction for new customer (K-Means)
+    st.subheader("Predict Cluster for New Customer (K-Means)")
+    income = st.number_input("Annual Income (k$)", min_value=0.0, key="k_income")
+    score = st.number_input("Spending Score (1-100)", min_value=0.0, max_value=100.0, key="k_score")
+
+    if st.button("Predict Cluster (K-Means)"):
+        new_data = np.array([[income, score]])
+        new_data_scaled = scaler.transform(new_data)
+        if use_pca:
+            new_data_scaled = pca.transform(new_data_scaled)
+        cluster = kmeans.predict(new_data_scaled)
+        st.success(f"The new customer belongs to Cluster **{cluster[0] + 1}**")
 
 elif clustering_method == "Hierarchical":
     st.subheader('Hierarchical Clustering')
@@ -102,7 +126,7 @@ elif clustering_method == "Hierarchical":
     plt.figure()
     dendrogram = sch.dendrogram(sch.linkage(X, method='ward'))
     plt.title('Dendrogram')
-    plt.xlabel('Customers')
+    plt.xlabel('Samples')
     plt.ylabel('Euclidean distances')
     st.pyplot(plt)
 
@@ -110,28 +134,40 @@ elif clustering_method == "Hierarchical":
     y_hc = hc.fit_predict(X)
 
     plt.figure()
-    plt.scatter(X[y_hc == 0, 0], X[y_hc == 0, 1], s=100, c='red', label='Cluster 1')
-    plt.scatter(X[y_hc == 1, 0], X[y_hc == 1, 1], s=100, c='blue', label='Cluster 2')
-    plt.scatter(X[y_hc == 2, 0], X[y_hc == 2, 1], s=100, c='green', label='Cluster 3')
-    plt.scatter(X[y_hc == 3, 0], X[y_hc == 3, 1], s=100, c='cyan', label='Cluster 4')
-    plt.scatter(X[y_hc == 4, 0], X[y_hc == 4, 1], s=100, c='magenta', label='Cluster 5')
+    for i in range(5):
+        plt.scatter(X[y_hc == i, 0], X[y_hc == i, 1], s=100, label=f'Cluster {i+1}')
     plt.title('Hierarchical Clusters of Customers')
-    plt.xlabel('Annual Income (k$)')
-    plt.ylabel('Spending Score (1-100)')
+    plt.xlabel('Component 1' if use_pca else 'Annual Income (k$)')
+    plt.ylabel('Component 2' if use_pca else 'Spending Score (1-100)')
     plt.legend()
     st.pyplot(plt)
+
+    silhouette = metrics.silhouette_score(X, y_hc)
+    st.write(f"Silhouette Score: **{silhouette:.3f}**")
+
+    # Approximate Prediction for new customer
+    st.subheader("Predict Cluster for New Customer (Hierarchical - Approximate)")
+    income_h = st.number_input("Annual Income (k$)", min_value=0.0, key="h_income")
+    score_h = st.number_input("Spending Score (1-100)", min_value=0.0, max_value=100.0, key="h_score")
+
+    if st.button("Approximate Predict Cluster (Hierarchical)"):
+        new_point = np.array([[income_h, score_h]])
+        new_point_scaled = scaler.transform(new_point)
+        if use_pca:
+            new_point_scaled = pca.transform(new_point_scaled)
+        combined = np.vstack([X, new_point_scaled])
+        hc_all = AgglomerativeClustering(n_clusters=5, metric='euclidean', linkage='ward')
+        labels_all = hc_all.fit_predict(combined)
+        predicted_cluster = labels_all[-1]
+        st.success(f"The new customer approximately belongs to Cluster **{predicted_cluster + 1}**")
 
 elif clustering_method == "DBSCAN":
     st.subheader('DBSCAN Clustering')
 
-    # Standardize features
-    X_scaled = StandardScaler().fit_transform(X)
-
-    # DBSCAN parameters
     eps = st.slider("Epsilon (eps)", min_value=0.1, max_value=1.0, value=0.3, step=0.1)
     min_samples = st.slider("Minimum samples", min_value=3, max_value=20, value=10, step=1)
 
-    db = DBSCAN(eps=eps, min_samples=min_samples).fit(X_scaled)
+    db = DBSCAN(eps=eps, min_samples=min_samples).fit(X_scaled if not use_pca else X)
     labels = db.labels_
 
     n_clusters_ = len(set(labels)) - (1 if -1 in labels else 0)
@@ -140,9 +176,9 @@ elif clustering_method == "DBSCAN":
     st.write(f"Estimated number of clusters: **{n_clusters_}**")
     st.write(f"Estimated number of noise points: **{n_noise_}**")
 
-    if len(set(labels)) > 1 and -1 not in labels:
-        silhouette = metrics.silhouette_score(X_scaled, labels)
-        st.write(f"Silhouette Coefficient: **{silhouette:.3f}**")
+    if n_clusters_ > 0:
+        silhouette = metrics.silhouette_score(X_scaled if not use_pca else X, labels)
+        st.write(f"Silhouette Score: **{silhouette:.3f}**")
 
     unique_labels = set(labels)
     colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
@@ -150,13 +186,14 @@ elif clustering_method == "DBSCAN":
     plt.figure()
     for k, col in zip(unique_labels, colors):
         if k == -1:
-            col = [0, 0, 0, 1]  # black for noise
-
+            col = [0, 0, 0, 1]
         class_member_mask = (labels == k)
-        xy = X_scaled[class_member_mask]
+        xy = X[class_member_mask]
         plt.plot(xy[:, 0], xy[:, 1], 'o', markerfacecolor=tuple(col),
                  markeredgecolor='k', markersize=10)
     plt.title(f'DBSCAN Clustering (Clusters: {n_clusters_})')
+    plt.xlabel('Component 1' if use_pca else 'Annual Income (k$)')
+    plt.ylabel('Component 2' if use_pca else 'Spending Score (1-100)')
     st.pyplot(plt)
 
 # Signature
