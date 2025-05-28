@@ -126,7 +126,8 @@ elif clustering_method == "Hierarchical":
     plt.ylabel('Euclidean distances')
     st.pyplot(plt)
 
-    hc = AgglomerativeClustering(n_clusters=5, affinity='euclidean', linkage='ward')
+    # ✅ Updated affinity → metric
+    hc = AgglomerativeClustering(n_clusters=5, metric='euclidean', linkage='ward')
     y_hc = hc.fit_predict(X)
 
     plt.figure()
@@ -149,7 +150,7 @@ elif clustering_method == "Hierarchical":
         if use_pca:
             new_point_scaled = pca.transform(new_point_scaled)
         combined = np.vstack([X, new_point_scaled])
-        hc_all = AgglomerativeClustering(n_clusters=5, affinity='euclidean', linkage='ward')
+        hc_all = AgglomerativeClustering(n_clusters=5, metric='euclidean', linkage='ward')
         labels_all = hc_all.fit_predict(combined)
         predicted_cluster = labels_all[-1]
         st.success(f"The new customer approximately belongs to Cluster **{predicted_cluster + 1}**")
