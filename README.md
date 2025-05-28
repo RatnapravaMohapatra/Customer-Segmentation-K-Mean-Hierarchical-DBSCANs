@@ -1,13 +1,12 @@
-# Customer-Segmentation-K-Means-Clustering
+# Customer-Segmentation-K-Means,Hierarchical,DBSCAN-Clustering
 
 🌟 **Unlock the Power of Customer Insights with K-Means Clustering!** 🌟
 
-Dive into the world of data-driven decision-making with our **Customer Segmentation K-Means Clustering** project. This repository showcases a sophisticated Streamlit application designed to segment customers based on their spending habits and annual income using the K-Means clustering algorithm.
+Dive into the world of data-driven decision-making with our **Customer Segmentation  Clustering** project. This repository showcases a sophisticated Streamlit application designed to segment customers based on their spending habits and annual income using the K-Means,Hierarchical,DBSCAN clustering algorithm.
 
 ##  Features
 
 - **Interactive Dashboard**: Upload your CSV file and visualize customer segments with ease.
-- **Elbow Method**: Determine the optimal number of clusters for your data.
 - **Cluster Visualization**: Gain insights into customer segments through intuitive scatter plots.
 - **Beautiful UI**: Enjoy a visually appealing interface with a nature-inspired background and custom styling.
 
