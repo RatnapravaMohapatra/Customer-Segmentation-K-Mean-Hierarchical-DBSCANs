@@ -5,7 +5,6 @@ import streamlit as st
 from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from sklearn import metrics
 import scipy.cluster.hierarchy as sch
 
 # Set background image using CSS
@@ -104,9 +103,6 @@ if clustering_method == "K-Means":
     plt.legend()
     st.pyplot(plt)
 
-    silhouette = metrics.silhouette_score(X, y_kmeans)
-    st.write(f"Silhouette Score: **{silhouette:.3f}**")
-
     # Prediction for new customer (K-Means)
     st.subheader("Predict Cluster for New Customer (K-Means)")
     income = st.number_input("Annual Income (k$)", min_value=0.0, key="k_income")
@@ -130,7 +126,7 @@ elif clustering_method == "Hierarchical":
     plt.ylabel('Euclidean distances')
     st.pyplot(plt)
 
-    hc = AgglomerativeClustering(n_clusters=5, metric='euclidean', linkage='ward')
+    hc = AgglomerativeClustering(n_clusters=5, affinity='euclidean', linkage='ward')
     y_hc = hc.fit_predict(X)
 
     plt.figure()
@@ -141,9 +137,6 @@ elif clustering_method == "Hierarchical":
     plt.ylabel('Component 2' if use_pca else 'Spending Score (1-100)')
     plt.legend()
     st.pyplot(plt)
-
-    silhouette = metrics.silhouette_score(X, y_hc)
-    st.write(f"Silhouette Score: **{silhouette:.3f}**")
 
     # Approximate Prediction for new customer
     st.subheader("Predict Cluster for New Customer (Hierarchical - Approximate)")
@@ -156,7 +149,7 @@ elif clustering_method == "Hierarchical":
         if use_pca:
             new_point_scaled = pca.transform(new_point_scaled)
         combined = np.vstack([X, new_point_scaled])
-        hc_all = AgglomerativeClustering(n_clusters=5, metric='euclidean', linkage='ward')
+        hc_all = AgglomerativeClustering(n_clusters=5, affinity='euclidean', linkage='ward')
         labels_all = hc_all.fit_predict(combined)
         predicted_cluster = labels_all[-1]
         st.success(f"The new customer approximately belongs to Cluster **{predicted_cluster + 1}**")
@@ -175,10 +168,6 @@ elif clustering_method == "DBSCAN":
 
     st.write(f"Estimated number of clusters: **{n_clusters_}**")
     st.write(f"Estimated number of noise points: **{n_noise_}**")
-
-    if n_clusters_ > 0:
-        silhouette = metrics.silhouette_score(X_scaled if not use_pca else X, labels)
-        st.write(f"Silhouette Score: **{silhouette:.3f}**")
 
     unique_labels = set(labels)
     colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels))]
